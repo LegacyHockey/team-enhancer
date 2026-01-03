@@ -1,6 +1,5 @@
 (function(){
   'use strict';
-
   
   const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
   
@@ -19,9 +18,23 @@
     
     if (cached) {
       const parsedCache = JSON.parse(cached);
-      if (Date.now() - parsedCache.timestamp < CACHE_DURATION) {
+      
+      // Check if cache is in old format - if so, clear it
+      const sampleKey = Object.keys(parsedCache.data || {})[0];
+      const isOldFormat = sampleKey && !sampleKey.includes('_');
+      
+      if (isOldFormat) {
+        console.log('Old cache format detected, clearing and refetching');
+        localStorage.removeItem(cacheKey);
+        playerData = await fetchRosterData(season);
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: playerData,
+          timestamp: Date.now()
+        }));
+      } else if (Date.now() - parsedCache.timestamp < CACHE_DURATION) {
         console.log('Using cached roster data');
         playerData = parsedCache.data;
+        console.log('Sample cache keys:', Object.keys(playerData).slice(0, 3));
       } else {
         console.log('Cache expired, fetching fresh data');
         playerData = await fetchRosterData(season);
