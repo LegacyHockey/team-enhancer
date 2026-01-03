@@ -10,8 +10,11 @@
     
     if (!teamMatch || !seasonMatch) return;
     
+    const teamInstanceId = teamMatch[1];
     const season = seasonMatch[1];
-    const cacheKey = `team_roster_${season}`;
+    
+    // Use team-specific cache key to avoid mixing rosters from different teams
+    const cacheKey = `team_roster_${teamInstanceId}_${season}`;
     
     let playerData;
     const cached = localStorage.getItem(cacheKey);
@@ -32,7 +35,7 @@
           timestamp: Date.now()
         }));
       } else if (Date.now() - parsedCache.timestamp < CACHE_DURATION) {
-        console.log('Using cached roster data');
+        console.log('Using cached roster data for team', teamInstanceId);
         playerData = parsedCache.data;
         console.log('Sample cache keys:', Object.keys(playerData).slice(0, 3));
       } else {
