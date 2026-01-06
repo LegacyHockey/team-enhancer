@@ -249,47 +249,79 @@
     
     console.log(`Enhanced table: ${matchedCount}/${bodyRows.length} players matched`);
     
-    // Re-initialize the sortable table to pick up the new columns
-    // This assumes the page uses SportsEngine's NginTable functionality
-    if (window.$j && table.id) {
-      try {
-        // Remove existing sort handlers
-        const allHeaders = headerRow.querySelectorAll('th');
-        allHeaders.forEach(header => {
-          header.onclick = null;
-        });
+    // Set up proper bidirectional sorting for all columns
+    const allHeaders = headerRow.querySelectorAll('th');
+    allHeaders.forEach((header, index) => {
+      const headerText = header.textContent.trim();
+      if (headerText) {
+        // Clear any existing handlers
+        header.onclick = null;
+        header.style.cursor = 'pointer';
         
-        // Re-initialize with NginTable if available
-        $j(`#${table.id}`).NginTable({header_columns:1});
-        
-        // If makeTableSortable is available, use it
-        if (window.makeTableSortable && window.$) {
-          makeTableSortable($(table.id));
-        }
-        
-        console.log('Re-initialized sortable table');
-      } catch (error) {
-        console.log('Could not re-initialize table sorting:', error);
-        
-        // Fallback: manually add sort handlers to all headers
-        const allHeaders = headerRow.querySelectorAll('th');
-        allHeaders.forEach((header, index) => {
-          if (header.textContent.trim()) {
-            header.style.cursor = 'pointer';
-            header.onclick = () => sortTable(table, index);
-          }
-        });
+        // Add new sort handler
+        header.onclick = () => sortTableBidirectional(table, index, headerText);
       }
+    });
+    
+    console.log('Set up bidirectional sorting for all columns');
+  }
+  
+  function sortTableBidirectional(table, columnIndex, headerText) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Get current sort state for this column
+    const currentDir = table.dataset[`sort${columnIndex}`] || 'none';
+    let newDir;
+    
+    // Determine new direction
+    if (currentDir === 'none' || currentDir === 'asc') {
+      newDir = 'desc'; // Start with descending (most to least)
     } else {
-      // Fallback: manually add sort handlers to all headers
-      const allHeaders = headerRow.querySelectorAll('th');
-      allHeaders.forEach((header, index) => {
-        if (header.textContent.trim()) {
-          header.style.cursor = 'pointer';
-          header.onclick = () => sortTable(table, index);
-        }
-      });
+      newDir = 'asc'; // Then ascending (least to most)
     }
+    
+    // Clear all column sort states
+    Object.keys(table.dataset).forEach(key => {
+      if (key.startsWith('sort')) {
+        delete table.dataset[key];
+      }
+    });
+    
+    // Set new sort state
+    table.dataset[`sort${columnIndex}`] = newDir;
+    
+    // Determine if this is a numeric column
+    const isNumeric = rows.some(row => {
+      const cell = row.querySelectorAll('td')[columnIndex];
+      const text = cell?.textContent?.trim() || '';
+      return text && !isNaN(parseFloat(text.replace(/,/g, '')));
+    });
+    
+    rows.sort((a, b) => {
+      const aCell = a.querySelectorAll('td')[columnIndex];
+      const bCell = b.querySelectorAll('td')[columnIndex];
+      const aVal = aCell?.textContent?.trim() || '';
+      const bVal = bCell?.textContent?.trim() || '';
+      
+      let comparison;
+      
+      if (isNumeric) {
+        // Numeric comparison
+        const aNum = parseFloat(aVal.replace(/,/g, '')) || 0;
+        const bNum = parseFloat(bVal.replace(/,/g, '')) || 0;
+        comparison = aNum - bNum;
+      } else {
+        // Text comparison
+        comparison = aVal.localeCompare(bVal);
+      }
+      
+      return newDir === 'desc' ? -comparison : comparison;
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+    
+    console.log(`Sorted column ${columnIndex} (${headerText}) ${newDir}`);
   }
   
   function sortTable(table, columnIndex) {
