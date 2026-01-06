@@ -184,17 +184,15 @@
     const posHeader = document.createElement('th');
     posHeader.textContent = 'Pos';
     posHeader.className = sampleHeader.className;
-    posHeader.style.cssText = 'text-align: center; font-weight: bold; cursor: pointer;';
+    posHeader.style.cssText = 'text-align: center; font-weight: bold;';
     posHeader.title = 'Sort by Position';
-    posHeader.onclick = () => sortTable(table, nameIndex + 1);
     
     // Add Grade header
     const gradeHeader = document.createElement('th');
     gradeHeader.textContent = 'Grade';
     gradeHeader.className = sampleHeader.className;
-    gradeHeader.style.cssText = 'text-align: center; font-weight: bold; cursor: pointer;';
+    gradeHeader.style.cssText = 'text-align: center; font-weight: bold;';
     gradeHeader.title = 'Sort by Grade';
-    gradeHeader.onclick = () => sortTable(table, nameIndex + 2);
     
     // Insert headers after Name column
     headers[nameIndex].after(gradeHeader);
