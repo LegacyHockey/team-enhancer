@@ -200,24 +200,6 @@
     headers[nameIndex].after(gradeHeader);
     headers[nameIndex].after(posHeader);
     
-    // Update sort handlers for columns after the inserted ones
-    // They need to account for the 2 new columns
-    const allHeaders = headerRow.querySelectorAll('th');
-    allHeaders.forEach((header, index) => {
-      if (index > nameIndex + 2 && header.onclick) {
-        const oldHandler = header.onclick;
-        header.onclick = function() {
-          // Extract the original column index from the handler
-          const match = oldHandler.toString().match(/sortTable\(table,\s*(\d+)\)/);
-          if (match) {
-            const originalIndex = parseInt(match[1]);
-            // Add 2 to account for the new columns
-            sortTable(table, originalIndex + 2);
-          }
-        };
-      }
-    });
-    
     let matchedCount = 0;
     
     // Add data to rows
@@ -266,6 +248,48 @@
     });
     
     console.log(`Enhanced table: ${matchedCount}/${bodyRows.length} players matched`);
+    
+    // Re-initialize the sortable table to pick up the new columns
+    // This assumes the page uses SportsEngine's NginTable functionality
+    if (window.$j && table.id) {
+      try {
+        // Remove existing sort handlers
+        const allHeaders = headerRow.querySelectorAll('th');
+        allHeaders.forEach(header => {
+          header.onclick = null;
+        });
+        
+        // Re-initialize with NginTable if available
+        $j(`#${table.id}`).NginTable({header_columns:1});
+        
+        // If makeTableSortable is available, use it
+        if (window.makeTableSortable && window.$) {
+          makeTableSortable($(table.id));
+        }
+        
+        console.log('Re-initialized sortable table');
+      } catch (error) {
+        console.log('Could not re-initialize table sorting:', error);
+        
+        // Fallback: manually add sort handlers to all headers
+        const allHeaders = headerRow.querySelectorAll('th');
+        allHeaders.forEach((header, index) => {
+          if (header.textContent.trim()) {
+            header.style.cursor = 'pointer';
+            header.onclick = () => sortTable(table, index);
+          }
+        });
+      }
+    } else {
+      // Fallback: manually add sort handlers to all headers
+      const allHeaders = headerRow.querySelectorAll('th');
+      allHeaders.forEach((header, index) => {
+        if (header.textContent.trim()) {
+          header.style.cursor = 'pointer';
+          header.onclick = () => sortTable(table, index);
+        }
+      });
+    }
   }
   
   function sortTable(table, columnIndex) {
